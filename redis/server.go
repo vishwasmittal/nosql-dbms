@@ -23,36 +23,37 @@ Attributes of the server
 	- run_server()
 	- conn_handler()
 	- get_resp()
- */
+*/
+
 type MemoryManager struct {
-	MemMap map[string]string
+	MemMap map[string]DynamicDataStruct
 	mtx    sync.RWMutex
 }
 
 func (m *MemoryManager) GetHanlder(key string) (response ResponseProtocol) {
-	m.MemMap["Hello"] = "hi, how are you?"
 	m.mtx.RLock()
 	data, ok := m.MemMap[key]
 	m.mtx.RUnlock()
 
 	if ok {
-		response.Data = data
+		response.Data = DataStruct{key, data}
 		response.Error = ""
 	} else {
-		response.Data = ""
+		response.Data = EmptyDataStruct
 		response.Error = "Not Found"
 	}
 	return response
-
 }
 
-func (m *MemoryManager) SetHandler(key string, value string) (response ResponseProtocol) {
+func (m *MemoryManager) SetHandler(data DataStruct) (response ResponseProtocol) {
 	m.mtx.Lock()
-	m.MemMap[key] = value
+	m.MemMap[data.Key] = data.Data
 	m.mtx.Unlock()
 
 	response.Error = ""
-	response.Data = "SET"
+	response.Data = EmptyDataStruct
+
+	//log.Println(m.MemMap)
 	return response
 }
 
@@ -64,30 +65,21 @@ func (m *MemoryManager) DeleteHandler(key string) (response ResponseProtocol) {
 	m.mtx.Unlock()
 
 	response.Error = ""
-	response.Data = "DEL"
+	response.Data = EmptyDataStruct
 	return response
 }
 
 func (m *MemoryManager) EvictHandler() (response ResponseProtocol) {
 	m.mtx.Lock()
-	m.MemMap = make(map[string]string)
+	m.MemMap = make(map[string]DynamicDataStruct)
 	m.mtx.Unlock()
 
 	response.Error = ""
-	response.Data = "EVICT"
+	response.Data = EmptyDataStruct
 	return response
-
 }
 
 var MMObject MemoryManager
-
-type complexData struct {
-	N int
-	S string
-	M map[string]int
-	P []byte
-	C *complexData
-}
 
 // HandleFunc is a function that handles an incoming command.
 // It receives the open connection wrapped in a `ReadWriter` interface.
@@ -156,28 +148,22 @@ func (e *Endpoint) handleMessages(conn net.Conn) {
 
 	switch request.Command {
 	case "GET":
-		//var rMap map[string]interface{} = request.Data
-		response = MMObject.GetHanlder(request.Data)
-		break
+		response = MMObject.GetHanlder(request.Data.Key)
 	case "SET":
-		//response = MMObject.SetHandler(request.Data["key"], request.Data["value"])
-		break
+		response = MMObject.SetHandler(request.Data)
 	case "DEL":
-		response = MMObject.DeleteHandler(request.Data)
-		break
+		response = MMObject.DeleteHandler(request.Data.Key)
 	case "EVICT":
 		response = MMObject.EvictHandler()
-		break
 	default:
 		response.Error = "Unknown Command"
-		response.Data = ""
+		response.Data = EmptyDataStruct
 	}
 	encoder := json.NewEncoder(conn)
 	encoder.Encode(response)
 }
 
 func handleRequests(rw *bufio.ReadWriter) {
-	// Receive a string.
 	log.Print("Receive STRING message:")
 	s, err := rw.ReadString('\n')
 	if err != nil {
@@ -198,7 +184,7 @@ func handleRequests(rw *bufio.ReadWriter) {
 /* server listens for incoming requests and dispatches them to
 registered handler functions. */
 func ServerFunc() error {
-	MMObject.MemMap = make(map[string]string)
+	MMObject.MemMap = make(map[string]DynamicDataStruct)
 	endpoint := NewEndpoint()
 
 	// Add the handle funcs.
