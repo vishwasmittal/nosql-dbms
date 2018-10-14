@@ -30,7 +30,7 @@ func main() {
 		log.Println("Error:", errors.WithStack(err))
 	}
 
-	log.Println("Server done.")
+	log.Println("MemoryManager done.")
 }
 
 // The Lshortfile flag includes file name and line number in log messages.
