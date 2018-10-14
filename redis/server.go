@@ -2,12 +2,10 @@ package redis
 
 import (
 	"bufio"
-	"encoding/gob"
-	"encoding/json"
+	"fmt"
 	"github.com/pkg/errors"
 	"log"
 	"net"
-	"strings"
 	"sync"
 )
 
@@ -107,96 +105,112 @@ func (e *Endpoint) handleMessages(conn net.Conn) {
 	rw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
 	defer conn.Close()
 
-	var t temp_interface
-	decoder := json.NewDecoder(rw)
-	if err := decoder.Decode(&t); err!=nil {
-		log.Println(err)
+	data, err:= rw.ReadString('\n')
+	if err!= nil{
+		fmt.Println("Something wrong at server")
 	}
+	fmt.Println(data)
 
-	// Read from the connection until EOF. Expect a command name as the
-	// next input. Call the handler that is registered for this command.
-	//for {
-	//	log.Print("Receive command '")
-	//	cmd, err := rw.ReadString('\n')
-	//	switch {
-	//	case err == io.EOF:
-	//		log.Println("Reached EOF - close this connection.\n   ---")
-	//		return
-	//	case err != nil:
-	//		log.Println("\nError reading command. Got: '"+cmd+"'\n", err)
-	//		return
-	//	}
-	//	// Trim the request string - ReadString does not strip any newlines.
-	//	cmd = strings.Trim(cmd, "\n ")
-	//	log.Println(cmd + "'")
-	//
-	//	// Fetch the appropriate handler function from the 'handler' map and call it.
-	//	e.m.RLock()
-	//	handleCommand, ok := e.handler[cmd]
-	//	e.m.RUnlock()
-	//	if !ok {
-	//		log.Println("Command '" + cmd + "' is not registered.")
-	//		return
-	//	}
-	//	handleCommand(rw)
+	rw.WriteString("Hello from the server\n")
+	rw.Flush()
+	//var rec_t temp_interface
+	//decoder := json.NewDecoder(conn)
+	//if err := decoder.Decode(&rec_t); err!=nil {
+	//	log.Println(err)
+	//	log.Println("Some error!!!")
 	//}
+	//log.Println(rec_t)
+	//
+	//t2 := temp_interface{"hello from server", 1234546}
+	//encoder := json.NewEncoder(conn)
+	//rw.Flush()
+	//if err := encoder.Encode(t2); err!=nil {
+	//	log.Println(err)
+	//}
+	//// Read from the connection until EOF. Expect a command name as the
+	//// next input. Call the handler that is registered for this command.
+	////for {
+	////	log.Print("Receive command '")
+	////	cmd, err := rw.ReadString('\n')
+	////	switch {
+	////	case err == io.EOF:
+	////		log.Println("Reached EOF - close this connection.\n   ---")
+	////		return
+	////	case err != nil:
+	////		log.Println("\nError reading command. Got: '"+cmd+"'\n", err)
+	////		return
+	////	}
+	////	// Trim the request string - ReadString does not strip any newlines.
+	////	cmd = strings.Trim(cmd, "\n ")
+	////	log.Println(cmd + "'")
+	////
+	////	// Fetch the appropriate handler function from the 'handler' map and call it.
+	////	e.m.RLock()
+	////	handleCommand, ok := e.handler[cmd]
+	////	e.m.RUnlock()
+	////	if !ok {
+	////		log.Println("Command '" + cmd + "' is not registered.")
+	////		return
+	////	}
+	////	handleCommand(rw)
+	////}
 }
 
 
-/* Now let's create two handler functions. The easiest case is where our
-ad-hoc protocol only sends string data.
-
-The second handler receives and processes a struct that was send as GOB data.
-*/
-
-// handleStrings handles the "STRING" request.
-func handleStrings(rw *bufio.ReadWriter) {
-	// Receive a string.
-	log.Print("Receive STRING message:")
-	s, err := rw.ReadString('\n')
-	if err != nil {
-		log.Println("Cannot read from connection.\n", err)
-	}
-	s = strings.Trim(s, "\n ")
-	log.Println(s)
-	_, err = rw.WriteString("Thank you.\n")
-	if err != nil {
-		log.Println("Cannot write to connection.\n", err)
-	}
-	err = rw.Flush()
-	if err != nil {
-		log.Println("Flush failed.", err)
-	}
-}
-
-// handleGob handles the "GOB" request. It decodes the received GOB data
-// into a struct.
-func handleGob(rw *bufio.ReadWriter) {
-	log.Print("Receive GOB data:")
-	var data complexData
-	// Create a decoder that decodes directly into a struct variable.
-	dec := gob.NewDecoder(rw)
-	err := dec.Decode(&data)
-	if err != nil {
-		log.Println("Error decoding GOB data:", err)
-		return
-	}
-	// Print the complexData struct and the nested one, too, to prove
-	// that both travelled across the wire.
-	log.Printf("Outer complexData struct: \n%#v\n", data)
-	log.Printf("Inner complexData struct: \n%#v\n", data.C)
-}
+///* Now let's create two handler functions. The easiest case is where our
+//ad-hoc protocol only sends string data.
+//
+//The second handler receives and processes a struct that was send as GOB data.
+//*/
+//
+//// handleStrings handles the "STRING" request.
+//func handleStrings(rw *bufio.ReadWriter) {
+//	// Receive a string.
+//	log.Print("Receive STRING message:")
+//	s, err := rw.ReadString('\n')
+//	if err != nil {
+//		log.Println("Cannot read from connection.\n", err)
+//	}
+//	s = strings.Trim(s, "\n ")
+//	log.Println(s)
+//	_, err = rw.WriteString("Thank you.\n")
+//	if err != nil {
+//		log.Println("Cannot write to connection.\n", err)
+//	}
+//	err = rw.Flush()
+//	if err != nil {
+//		log.Println("Flush failed.", err)
+//	}
+//}
+//
+//// handleGob handles the "GOB" request. It decodes the received GOB data
+//// into a struct.
+//func handleGob(rw *bufio.ReadWriter) {
+//	log.Print("Receive GOB data:")
+//	var data complexData
+//	// Create a decoder that decodes directly into a struct variable.
+//	dec := gob.NewDecoder(rw)
+//	err := dec.Decode(&data)
+//	if err != nil {
+//		log.Println("Error decoding GOB data:", err)
+//		return
+//	}
+//	// Print the complexData struct and the nested one, too, to prove
+//	// that both travelled across the wire.
+//	log.Printf("Outer complexData struct: \n%#v\n", data)
+//	log.Printf("Inner complexData struct: \n%#v\n", data.C)
+//}
 
 
 
 // server listens for incoming requests and dispatches them to
 // registered handler functions.
-func server() error {
+func ServerFunc() error {
 	endpoint := NewEndpoint()
 
 	// Add the handle funcs.
-	endpoint.AddHandleFunc("STRING", handleStrings)
-	endpoint.AddHandleFunc("GOB", handleGob)
+	//endpoint.AddHandleFunc("STRING", handleStrings)
+	//endpoint.AddHandleFunc("GOB", handleGob)
 
 	// Start listening.
 	return endpoint.Listen()
