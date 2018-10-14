@@ -10,7 +10,6 @@ import (
 // main
 func main() {
 
-	//redis.client()
 	connect := flag.String("connect", "", "IP address of process to join. If empty, go into listen mode.")
 	flag.Parse()
 

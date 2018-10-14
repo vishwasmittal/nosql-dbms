@@ -1,11 +1,5 @@
 package redis
 
-/*
-Attributes of a protocol
-	- incoming message handler
-	- output response serializer
-*/
-
 //var COMMANDS map[string]string = {
 //"get": "GET",
 //"set": "SET",

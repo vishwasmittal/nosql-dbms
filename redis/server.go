@@ -145,7 +145,7 @@ func (e *Endpoint) handleMessages(conn net.Conn) {
 		return
 	}
 	var response ResponseProtocol
-
+	log.Println(request.Command)
 	switch request.Command {
 	case "GET":
 		response = MMObject.GetHanlder(request.Data.Key)

@@ -8,16 +8,7 @@ import (
 	"net"
 )
 
-/*
-Attributes of a client
-	- host
-	- port (default: 16379
-	- provide functions for each of the server supported commands
-*/
-type Client struct {
-}
 
-//func Open(addr string) (*bufio.ReadWriter, error) {
 func Open(addr string) (net.Conn, error) {
 	log.Println("Dial " + addr)
 	conn, err := net.Dial("tcp", addr)
